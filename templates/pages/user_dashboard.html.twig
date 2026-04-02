@@ -1,0 +1,155 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}User Dashboard{% endblock %}
+
+{% block stylesheets %}
+<style>
+body { font-family: Arial, sans-serif; background: #f3f5f7; margin: 0; }
+.wrap { max-width: 920px; margin: 26px auto; }
+.top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px; }
+label { display: block; font-size: 13px; margin: 8px 0 4px; }
+input { width: 100%; padding: 8px; box-sizing: border-box; }
+button { margin-top: 10px; padding: 8px 12px; }
+.msg { margin-top: 10px; font-size: 13px; min-height: 18px; }
+pre { white-space: pre-wrap; background: #111; color: #e6ffe6; padding: 10px; border-radius: 6px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="wrap">
+    <div class="top">
+        <h1>User Dashboard</h1>
+        <button id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Profile</h3>
+            <label>Name</label>
+            <input id="name" value="">
+            <label>Email</label>
+            <input id="email" value="">
+            <button id="saveProfileBtn">Save profile</button>
+        </div>
+
+        <div class="card">
+            <h3>My interests</h3>
+            <div id="interests"></div>
+            <button id="saveInterestsBtn">Save interests</button>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 12px;">
+        <h3>Current user data</h3>
+        <pre id="raw"></pre>
+    </div>
+
+    <div id="msg" class="msg"></div>
+</div>
+
+<script>
+const token = localStorage.getItem('jwt_token');
+const msg = document.getElementById('msg');
+let allInterests = [];
+let me = null;
+
+function authHeaders() {
+    return {'Content-Type': 'application/json', Authorization: `Bearer ${token}`};
+}
+
+function logout() {
+    localStorage.removeItem('jwt_token');
+    window.location.href = '/';
+}
+
+async function requireUser() {
+    if (!token) {
+        window.location.href = '/';
+        return;
+    }
+
+    const response = await fetch('/api/me', { headers: authHeaders() });
+    if (!response.ok) {
+        logout();
+        return;
+    }
+
+    me = await response.json();
+    if (me.role === 'ROLE_ADMIN') {
+        window.location.href = '/dashboard/admin';
+        return;
+    }
+
+    document.getElementById('name').value = me.name || '';
+    document.getElementById('email').value = me.email || '';
+    document.getElementById('raw').textContent = JSON.stringify(me, null, 2);
+}
+
+async function loadInterests() {
+    const response = await fetch('/api/interests', { headers: authHeaders() });
+    allInterests = response.ok ? await response.json() : [];
+
+    const selected = new Set((me.interests || []).map(x => Number(x.id)));
+    const wrap = document.getElementById('interests');
+    wrap.innerHTML = '';
+
+    allInterests.forEach(item => {
+        const id = Number(item.id);
+        const checked = selected.has(id) ? 'checked' : '';
+        wrap.insertAdjacentHTML('beforeend', `<label><input type="checkbox" value="${id}" ${checked}> ${item.name}</label>`);
+    });
+}
+
+async function saveProfile() {
+    msg.textContent = '';
+    const payload = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+    };
+
+    const response = await fetch('/api/me', {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    msg.textContent = response.ok ? 'Profile updated' : (data.error || data.message || 'Error');
+    if (response.ok) {
+        me = data;
+        document.getElementById('raw').textContent = JSON.stringify(me, null, 2);
+    }
+}
+
+async function saveInterests() {
+    msg.textContent = '';
+    const ids = Array.from(document.querySelectorAll('#interests input[type="checkbox"]:checked')).map(x => Number(x.value));
+
+    const response = await fetch('/api/me/interests', {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ interestIds: ids }),
+    });
+
+    const data = await response.json();
+    msg.textContent = response.ok ? 'Interests updated' : (data.error || data.message || 'Error');
+    if (response.ok) {
+        me = data;
+        document.getElementById('raw').textContent = JSON.stringify(me, null, 2);
+    }
+}
+
+document.getElementById('logoutBtn').addEventListener('click', logout);
+document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
+document.getElementById('saveInterestsBtn').addEventListener('click', saveInterests);
+
+(async () => {
+    await requireUser();
+    if (me) {
+        await loadInterests();
+    }
+})();
+</script>
+{% endblock %}

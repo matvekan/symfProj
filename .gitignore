@@ -1,0 +1,26 @@
+
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+/docker/mysql-data/
+###< symfony/framework-bundle ###
+
+###> lexik/jwt-authentication-bundle ###
+/config/jwt/*.pem
+###< lexik/jwt-authentication-bundle ###
+
+# IDE and OS files
+/.idea/
+.DS_Store
+Thumbs.db
+
+# Test/cache artifacts
+/.phpunit.result.cache
+
+# Local environment overrides
+/.env.test.local

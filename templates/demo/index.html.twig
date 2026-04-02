@@ -1,0 +1,131 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Symfony Demo{% endblock %}
+
+{% block stylesheets %}
+<style>
+body { font-family: Arial, sans-serif; margin: 24px; background: #f4f6f8; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
+input, textarea { width: 100%; padding: 8px; margin: 4px 0 8px 0; box-sizing: border-box; }
+button { padding: 8px 12px; cursor: pointer; }
+pre { background: #111; color: #0f0; padding: 10px; min-height: 120px; overflow: auto; }
+</style>
+{% endblock %}
+
+{% block body %}
+<h1>Demo: Auth / Users / Interests</h1>
+<div class="grid">
+    <div class="card">
+        <h3>Register</h3>
+        <input id="reg_name" placeholder="name" value="user1">
+        <input id="reg_email" placeholder="email" value="user1@example.com">
+        <input id="reg_password" placeholder="password" value="123456">
+        <input id="reg_date" placeholder="created_at" value="2026-04-01 10:00:00">
+        <input id="reg_interests" placeholder="interestIds comma separated" value="">
+        <button onclick="registerUser()">Register</button>
+    </div>
+
+    <div class="card">
+        <h3>Login (JWT)</h3>
+        <input id="login_email" placeholder="email" value="user1@example.com">
+        <input id="login_password" placeholder="password" value="123456">
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div class="card">
+        <h3>Me</h3>
+        <button onclick="loadMe()">GET /api/me</button>
+        <input id="me_interests" placeholder="interestIds comma separated" value="1">
+        <button onclick="updateMyInterests()">PUT /api/me/interests</button>
+    </div>
+
+    <div class="card">
+        <h3>Admin: Create Interest</h3>
+        <input id="interest_name" placeholder="Interest name" value="football">
+        <button onclick="adminCreateInterest()">POST /api/admin/interests</button>
+        <button onclick="adminListUsers()">GET /api/admin/users</button>
+    </div>
+
+    <div class="card">
+        <h3>Forgot / Reset Password</h3>
+        <input id="forgot_email" placeholder="email" value="user1@example.com">
+        <button onclick="forgotPassword()">POST /api/auth/forgot-password</button>
+        <input id="reset_token" placeholder="token from MailHog">
+        <input id="reset_password" placeholder="new password" value="654321">
+        <button onclick="resetPassword()">POST /api/auth/reset-password</button>
+    </div>
+
+    <div class="card">
+        <h3>Result</h3>
+        <pre id="out"></pre>
+    </div>
+</div>
+
+<script>
+let token = localStorage.getItem('jwt_token') || '';
+const out = document.getElementById('out');
+
+function parseIds(v) {
+    return v.split(',').map(x => x.trim()).filter(Boolean).map(Number);
+}
+
+function show(data) {
+    out.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+}
+
+async function api(path, method = 'GET', body = null, auth = false) {
+    const headers = {'Content-Type': 'application/json'};
+    if (auth && token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(path, {method, headers, body: body ? JSON.stringify(body) : null});
+    const txt = await res.text();
+    try { return JSON.parse(txt); } catch (e) { return txt; }
+}
+
+async function registerUser() {
+    const data = await api('/api/auth/register', 'POST', {
+        name: document.getElementById('reg_name').value,
+        email: document.getElementById('reg_email').value,
+        password: document.getElementById('reg_password').value,
+        created_at: document.getElementById('reg_date').value,
+        interestIds: parseIds(document.getElementById('reg_interests').value),
+    });
+    show(data);
+}
+
+async function login() {
+    const data = await api('/api/login_check', 'POST', {
+        email: document.getElementById('login_email').value,
+        password: document.getElementById('login_password').value,
+    });
+    if (data.token) {
+        token = data.token;
+        localStorage.setItem('jwt_token', token);
+    }
+    show(data);
+}
+
+async function loadMe() { show(await api('/api/me', 'GET', null, true)); }
+
+async function updateMyInterests() {
+    show(await api('/api/me/interests', 'PUT', {interestIds: parseIds(document.getElementById('me_interests').value)}, true));
+}
+
+async function adminCreateInterest() {
+    show(await api('/api/admin/interests', 'POST', {name: document.getElementById('interest_name').value}, true));
+}
+
+async function adminListUsers() { show(await api('/api/admin/users', 'GET', null, true)); }
+
+async function forgotPassword() {
+    show(await api('/api/auth/forgot-password', 'POST', {email: document.getElementById('forgot_email').value}));
+}
+
+async function resetPassword() {
+    show(await api('/api/auth/reset-password', 'POST', {
+        token: document.getElementById('reset_token').value,
+        newPassword: document.getElementById('reset_password').value,
+    }));
+}
+</script>
+{% endblock %}

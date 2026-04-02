@@ -1,0 +1,90 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Login{% endblock %}
+
+{% block stylesheets %}
+<style>
+body { font-family: Arial, sans-serif; background: #f3f5f7; margin: 0; }
+.wrap { max-width: 420px; margin: 60px auto; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 18px; }
+h1 { margin: 0 0 14px 0; font-size: 22px; }
+label { display: block; font-size: 13px; margin: 8px 0 4px; }
+input { width: 100%; padding: 8px; box-sizing: border-box; }
+button { margin-top: 12px; width: 100%; padding: 10px; }
+.links { margin-top: 10px; display: flex; justify-content: space-between; }
+.msg { margin-top: 10px; font-size: 13px; color: #b10000; min-height: 18px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="wrap">
+    <h1>Login</h1>
+    <label>Email</label>
+    <input id="email" type="email" value="" placeholder="Enter email">
+    <label>Password</label>
+    <input id="password" type="password" value="" placeholder="Enter password">
+    <button id="loginBtn">Sign in</button>
+    <div class="links">
+        <a href="/register">Registration</a>
+        <a href="/forgot-password">Forgot password</a>
+    </div>
+    <div id="msg" class="msg"></div>
+</div>
+
+<script>
+const msg = document.getElementById('msg');
+
+async function api(path, method = 'GET', body = null, token = null) {
+    const headers = {'Content-Type': 'application/json'};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const response = await fetch(path, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : null,
+    });
+    const text = await response.text();
+    try { return {ok: response.ok, status: response.status, data: JSON.parse(text)}; }
+    catch (e) { return {ok: response.ok, status: response.status, data: {message: text}}; }
+}
+
+function redirectByRole(user) {
+    if (user.role === 'ROLE_ADMIN') {
+        window.location.href = '/dashboard/admin';
+        return;
+    }
+    window.location.href = '/dashboard/user';
+}
+
+async function tryAutoLogin() {
+    const token = localStorage.getItem('jwt_token');
+    if (!token) return;
+    const me = await api('/api/me', 'GET', null, token);
+    if (me.ok) {
+        redirectByRole(me.data);
+    } else {
+        localStorage.removeItem('jwt_token');
+    }
+}
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+    msg.textContent = '';
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    const login = await api('/api/login_check', 'POST', { email, password });
+    if (!login.ok || !login.data.token) {
+        msg.textContent = login.data.message || 'Login failed';
+        return;
+    }
+
+    localStorage.setItem('jwt_token', login.data.token);
+    const me = await api('/api/me', 'GET', null, login.data.token);
+    if (!me.ok) {
+        msg.textContent = 'Token received, but /api/me failed';
+        return;
+    }
+    redirectByRole(me.data);
+});
+
+tryAutoLogin();
+</script>
+{% endblock %}

@@ -1,0 +1,306 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block stylesheets %}
+<style>
+body { font-family: Arial, sans-serif; background: #f3f5f7; margin: 0; }
+.wrap { max-width: 1100px; margin: 22px auto; }
+.top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.grid { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+.card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px; }
+label { display: block; font-size: 13px; margin: 8px 0 4px; }
+input, select { width: 100%; padding: 8px; box-sizing: border-box; }
+button { margin-top: 10px; padding: 8px 12px; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 13px; vertical-align: top; }
+.msg { margin-top: 10px; font-size: 13px; min-height: 18px; }
+
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: none; align-items: center; justify-content: center; z-index: 1000; }
+.modal-backdrop.open { display: flex; }
+.modal { width: min(640px, 94vw); max-height: 90vh; overflow: auto; background: #fff; border-radius: 8px; border: 1px solid #d9d9d9; padding: 14px; }
+.modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.modal-top h3 { margin: 0; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="wrap">
+    <div class="top">
+        <h1>Admin Dashboard</h1>
+        <button id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Create interest</h3>
+            <label>Name</label>
+            <input id="interestName" value="">
+            <button id="createInterestBtn">Create</button>
+
+            <h3 style="margin-top:14px;">Filters</h3>
+            <label>Name contains</label>
+            <input id="filterName" value="">
+            <label>Email contains</label>
+            <input id="filterEmail" value="">
+            <label>Role</label>
+            <select id="filterRole">
+                <option value="">Any role</option>
+                <option value="ROLE_USER">ROLE_USER</option>
+                <option value="ROLE_ADMIN">ROLE_ADMIN</option>
+            </select>
+            <label>Interest</label>
+            <select id="filterInterestId">
+                <option value="">Any interest</option>
+            </select>
+            <button id="loadUsersBtn">Load users</button>
+        </div>
+
+        <div class="card">
+            <h3>Users</h3>
+            <div id="tableWrap"></div>
+        </div>
+    </div>
+
+    <div id="msg" class="msg"></div>
+</div>
+
+<div id="editModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+        <div class="modal-top">
+            <h3 id="editModalTitle">Edit user</h3>
+            <button id="closeModalBtn" type="button">Close</button>
+        </div>
+
+        <label>User ID</label>
+        <input id="editId" disabled>
+        <label>Name</label>
+        <input id="editName">
+        <label>Email</label>
+        <input id="editEmail">
+        <label>Role</label>
+        <select id="editRole">
+            <option value="ROLE_USER">ROLE_USER</option>
+            <option value="ROLE_ADMIN">ROLE_ADMIN</option>
+        </select>
+        <label>New password (optional)</label>
+        <input id="editPassword" type="password" placeholder="Leave empty to keep old password">
+        <label>Interests</label>
+        <select id="editInterests" multiple size="7"></select>
+
+        <div class="modal-actions">
+            <button id="cancelModalBtn" type="button">Cancel</button>
+            <button id="saveUserBtn" type="button">Save user changes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem('jwt_token');
+const msg = document.getElementById('msg');
+const modal = document.getElementById('editModal');
+let usersCache = [];
+let interestsCache = [];
+let selectedUserId = null;
+
+function authHeaders() {
+    return {'Content-Type': 'application/json', Authorization: `Bearer ${token}`};
+}
+
+function logout() {
+    localStorage.removeItem('jwt_token');
+    window.location.href = '/';
+}
+
+function openModal() {
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeModal() {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+async function requireAdmin() {
+    if (!token) {
+        window.location.href = '/';
+        return;
+    }
+    const response = await fetch('/api/me', { headers: authHeaders() });
+    if (!response.ok) {
+        logout();
+        return;
+    }
+    const me = await response.json();
+    if (me.role !== 'ROLE_ADMIN') {
+        window.location.href = '/dashboard/user';
+    }
+}
+
+function esc(v) {
+    return String(v ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
+async function loadInterests() {
+    const response = await fetch('/api/admin/interests', { headers: authHeaders() });
+    interestsCache = response.ok ? await response.json() : [];
+
+    const filterSelect = document.getElementById('filterInterestId');
+    const editSelect = document.getElementById('editInterests');
+
+    filterSelect.innerHTML = '<option value="">Any interest</option>';
+    editSelect.innerHTML = '';
+
+    interestsCache.forEach(item => {
+        const optionHtml = `<option value="${esc(item.id)}">${esc(item.name)}</option>`;
+        filterSelect.insertAdjacentHTML('beforeend', optionHtml);
+        editSelect.insertAdjacentHTML('beforeend', optionHtml);
+    });
+}
+
+async function loadUsers() {
+    msg.textContent = '';
+    const params = new URLSearchParams();
+    const name = document.getElementById('filterName').value.trim();
+    const email = document.getElementById('filterEmail').value.trim();
+    const role = document.getElementById('filterRole').value;
+    const interestId = document.getElementById('filterInterestId').value;
+    if (name) params.set('name', name);
+    if (email) params.set('email', email);
+    if (role) params.set('role', role);
+    if (interestId) params.append('interestIds[]', interestId);
+
+    const response = await fetch('/api/admin/users?' + params.toString(), { headers: authHeaders() });
+    const users = await response.json();
+
+    if (!response.ok) {
+        msg.textContent = users.error || users.message || 'Error loading users';
+        return;
+    }
+
+    usersCache = users;
+    const rows = usersCache.map(u => {
+        const interests = (u.interests || []).map(i => esc(i.name)).join(', ');
+        return `<tr>
+            <td>${esc(u.id)}</td>
+            <td>${esc(u.name)}</td>
+            <td>${esc(u.email)}</td>
+            <td>${esc(u.role)}</td>
+            <td>${esc(u.createdAt)}</td>
+            <td>${interests}</td>
+            <td><button data-edit-id="${esc(u.id)}">Edit</button></td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('tableWrap').innerHTML = `<table>
+        <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Created</th><th>Interests</th><th>Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function fillEditForm(user) {
+    selectedUserId = Number(user.id);
+    document.getElementById('editId').value = user.id;
+    document.getElementById('editName').value = user.name || '';
+    document.getElementById('editEmail').value = user.email || '';
+    document.getElementById('editRole').value = user.role || 'ROLE_USER';
+    document.getElementById('editPassword').value = '';
+
+    const selectedInterests = new Set((user.interests || []).map(i => String(i.id)));
+    const editSelect = document.getElementById('editInterests');
+    Array.from(editSelect.options).forEach(option => {
+        option.selected = selectedInterests.has(option.value);
+    });
+}
+
+async function saveUser() {
+    msg.textContent = '';
+    if (!selectedUserId) {
+        msg.textContent = 'Select user first.';
+        return;
+    }
+
+    const interestIds = Array.from(document.getElementById('editInterests').selectedOptions).map(o => Number(o.value));
+    const payload = {
+        name: document.getElementById('editName').value.trim(),
+        email: document.getElementById('editEmail').value.trim(),
+        role: document.getElementById('editRole').value,
+        interestIds,
+    };
+
+    const password = document.getElementById('editPassword').value;
+    if (password) {
+        payload.password = password;
+    }
+
+    const response = await fetch(`/api/admin/users/${selectedUserId}`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        msg.textContent = data.error || data.message || 'Update failed';
+        return;
+    }
+
+    msg.textContent = `User #${selectedUserId} updated`;
+    closeModal();
+    await loadUsers();
+}
+
+async function createInterest() {
+    msg.textContent = '';
+    const name = document.getElementById('interestName').value.trim();
+    const response = await fetch('/api/admin/interests', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({name}),
+    });
+    const data = await response.json();
+    msg.textContent = response.ok ? `Created interest #${data.id}: ${data.name}` : (data.error || data.message || 'Error');
+    if (response.ok) {
+        await loadInterests();
+    }
+}
+
+document.getElementById('logoutBtn').addEventListener('click', logout);
+document.getElementById('loadUsersBtn').addEventListener('click', loadUsers);
+document.getElementById('createInterestBtn').addEventListener('click', createInterest);
+document.getElementById('saveUserBtn').addEventListener('click', saveUser);
+document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
+document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+
+modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
+        closeModal();
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && modal.classList.contains('open')) {
+        closeModal();
+    }
+});
+
+document.getElementById('tableWrap').addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-edit-id]');
+    if (!button) return;
+    const id = Number(button.getAttribute('data-edit-id'));
+    const user = usersCache.find(item => Number(item.id) === id);
+    if (user) {
+        fillEditForm(user);
+        openModal();
+    }
+});
+
+(async () => {
+    await requireAdmin();
+    await loadInterests();
+    await loadUsers();
+})();
+</script>
+{% endblock %}
