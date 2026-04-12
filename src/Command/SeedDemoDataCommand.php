@@ -4,8 +4,8 @@ namespace App\Command;
 
 use App\Entity\Interest;
 use App\Entity\User;
-use App\Repository\InterestRepository;
-use App\Repository\UserRepository;
+use App\Repository\Contract\InterestRepositoryInterface;
+use App\Repository\Contract\UserRepositoryInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -16,8 +16,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 class SeedDemoDataCommand extends Command
 {
     public function __construct(
-        private UserRepository $userRepository,
-        private InterestRepository $interestRepository,
+        private UserRepositoryInterface $userRepository,
+        private InterestRepositoryInterface $interestRepository,
         private UserPasswordHasherInterface $passwordHasher,
     ) {
         parent::__construct();

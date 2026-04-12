@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
+use App\DTO\Query\Admin\AdminUserFiltersDto;
 use App\Entity\User;
+use App\Repository\Contract\UserRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
@@ -10,43 +14,20 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<User>
  */
-class UserRepository extends ServiceEntityRepository
+class UserRepository extends ServiceEntityRepository implements UserRepositoryInterface
 {
-    public function __construct(private EntityManagerInterface $em,ManagerRegistry $registry)
+    public function __construct(private EntityManagerInterface $em, ManagerRegistry $registry)
     {
         parent::__construct($registry, User::class);
     }
 
-    //    /**
-    //     * @return User[] Returns an array of User objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('u')
-    //            ->andWhere('u.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('u.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?User
-    //    {
-    //        return $this->createQueryBuilder('u')
-    //            ->andWhere('u.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
-
-    public function store(User $user, $isFlush=true):User{
+    public function store(User $user, bool $isFlush = true): User
+    {
         $this->em->persist($user);
-        if($isFlush){
+        if ($isFlush) {
             $this->em->flush();
         }
+
         return $user;
     }
 
@@ -63,38 +44,38 @@ class UserRepository extends ServiceEntityRepository
         return $this->findOneBy(['email' => $email]);
     }
 
-    public function findByAdminFilters(array $filters = [], int $page = 1, int $limit = 20): array
+    public function findByAdminFilters(AdminUserFiltersDto $filters, int $page = 1, int $limit = 20): array
     {
         $qb = $this->createQueryBuilder('u')
             ->leftJoin('u.interest', 'i')
             ->addSelect('i');
 
-        if (!empty($filters['name'])) {
-            $qb->andWhere('u.name LIKE :name')->setParameter('name', '%' . $filters['name'] . '%');
+        if ($filters->name !== null) {
+            $qb->andWhere('u.name LIKE :name')->setParameter('name', '%' . $filters->name . '%');
         }
 
-        if (!empty($filters['email'])) {
-            $qb->andWhere('u.email LIKE :email')->setParameter('email', '%' . $filters['email'] . '%');
+        if ($filters->email !== null) {
+            $qb->andWhere('u.email LIKE :email')->setParameter('email', '%' . $filters->email . '%');
         }
 
-        if (!empty($filters['role'])) {
-            $qb->andWhere('u.role = :role')->setParameter('role', strtoupper((string) $filters['role']));
+        if ($filters->role !== null) {
+            $qb->andWhere('u.role = :role')->setParameter('role', mb_strtoupper($filters->role));
         }
 
-        if (!empty($filters['createdFrom'])) {
-            $qb->andWhere('u.createdAt >= :createdFrom')->setParameter('createdFrom', new \DateTimeImmutable((string) $filters['createdFrom']));
+        if ($filters->createdFrom !== null) {
+            $qb->andWhere('u.createdAt >= :createdFrom')->setParameter('createdFrom', $filters->createdFrom);
         }
 
-        if (!empty($filters['createdTo'])) {
-            $qb->andWhere('u.createdAt <= :createdTo')->setParameter('createdTo', new \DateTimeImmutable((string) $filters['createdTo']));
+        if ($filters->createdTo !== null) {
+            $qb->andWhere('u.createdAt <= :createdTo')->setParameter('createdTo', $filters->createdTo);
         }
 
-        if (!empty($filters['interestIds']) && is_array($filters['interestIds'])) {
-            $qb->andWhere('i.id IN (:interestIds)')->setParameter('interestIds', $filters['interestIds']);
+        if ($filters->interestIds !== []) {
+            $qb->andWhere('i.id IN (:interestIds)')->setParameter('interestIds', $filters->interestIds);
         }
 
-        if (!empty($filters['interestName'])) {
-            $qb->andWhere('i.name LIKE :interestName')->setParameter('interestName', '%' . $filters['interestName'] . '%');
+        if ($filters->interestName !== null) {
+            $qb->andWhere('i.name LIKE :interestName')->setParameter('interestName', '%' . $filters->interestName . '%');
         }
 
         $offset = max(0, ($page - 1) * $limit);

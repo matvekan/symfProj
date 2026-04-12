@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\UserRepository;
@@ -172,8 +174,4 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function toggleInterest(Interest $interest): static{
-        $this->interest->contains($interest)?$this->interest->removeElement($interest) : $this->interest->add($interest);
-        return $this;
-    }
 }

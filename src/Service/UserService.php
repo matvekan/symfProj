@@ -1,31 +1,34 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
+use App\DTO\Input\Common\InterestIdsInputDto;
 use App\DTO\Input\User\StoreUserInputDTO;
+use App\DTO\Input\User\UpdateUserInputDto;
 use App\Entity\User;
 use App\Factory\UserFactory;
-use App\Repository\InterestRepository;
-use App\Repository\UserRepository;
+use App\Repository\Contract\InterestRepositoryInterface;
+use App\Repository\Contract\UserRepositoryInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserService
 {
     public function __construct(
-        private UserRepository $userRepository,
+        private UserRepositoryInterface $userRepository,
         private UserFactory $userFactory,
         private UserPasswordHasherInterface $passwordHasher,
-        private InterestRepository $interestRepository,
+        private InterestRepositoryInterface $interestRepository,
         private CacheItemPoolInterface $cachePool,
     )
     {
     }
 
-    public function store(StoreUserInputDTO $storeUserInputDTO):User
+    public function store(StoreUserInputDTO $storeUserInputDTO): User
     {
-
-        $user=$this->userFactory->makeUser($storeUserInputDTO);
+        $user = $this->userFactory->makeUser($storeUserInputDTO);
         $user->setPassword($this->passwordHasher->hashPassword($user, $user->getPassword() ?? ''));
         if ($user->getCreatedAt() === null) {
             $user->setCreatedAt(new \DateTimeImmutable());
@@ -35,35 +38,30 @@ class UserService
         }
 
         $this->cachePool->clear();
+
         return $this->userRepository->store($user);
     }
 
-    public function index():array
+    public function updateUser(User $user, UpdateUserInputDto $updateUserInputDto): User
     {
-        return $this->userRepository->findAll();
-    }
-
-    public function updateUser(User $user, array $data): User
-    {
-        if (array_key_exists('name', $data)) {
-            $user->setName((string) $data['name']);
+        if ($updateUserInputDto->name !== null) {
+            $user->setName($updateUserInputDto->name);
         }
 
-        if (array_key_exists('email', $data)) {
-            $user->setEmail((string) $data['email']);
+        if ($updateUserInputDto->email !== null) {
+            $user->setEmail($updateUserInputDto->email);
         }
 
-        if (array_key_exists('role', $data)) {
-            $user->setRole((string) $data['role']);
+        if ($updateUserInputDto->role !== null) {
+            $user->setRole($updateUserInputDto->role);
         }
 
-        if (array_key_exists('password', $data) && is_string($data['password']) && $data['password'] !== '') {
-            $user->setPassword($this->passwordHasher->hashPassword($user, $data['password']));
+        if ($updateUserInputDto->password !== null && $updateUserInputDto->password !== '') {
+            $user->setPassword($this->passwordHasher->hashPassword($user, $updateUserInputDto->password));
         }
 
-        if (array_key_exists('interestIds', $data) || array_key_exists('interest_ids', $data)) {
-            $ids = $data['interestIds'] ?? $data['interest_ids'] ?? [];
-            $this->replaceInterests($user, is_array($ids) ? $ids : []);
+        if ($updateUserInputDto->hasInterestIds) {
+            $this->replaceInterests($user, new InterestIdsInputDto($updateUserInputDto->interestIds));
         }
 
         $this->cachePool->clear();
@@ -71,15 +69,15 @@ class UserService
         return $this->userRepository->store($user);
     }
 
-    public function replaceInterests(User $user, array $interestIds): User
+    public function replaceInterests(User $user, InterestIdsInputDto $interestIdsInputDto): User
     {
         foreach ($user->getInterest()->toArray() as $interest) {
             $user->removeInterest($interest);
         }
 
-        $normalizedIds = array_values(array_unique(array_map('intval', $interestIds)));
+        $normalizedIds = $interestIdsInputDto->normalized();
         if ($normalizedIds !== []) {
-            $interests = $this->interestRepository->findBy(['id' => $normalizedIds]);
+            $interests = $this->interestRepository->findByIds($normalizedIds);
             foreach ($interests as $interest) {
                 $user->addInterest($interest);
             }

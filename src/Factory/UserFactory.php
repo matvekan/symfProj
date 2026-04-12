@@ -1,20 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Factory;
 
 use App\DTO\Input\User\StoreUserInputDTO;
 use App\DTO\Output\Interest\InterestOutputDTO;
 use App\DTO\Output\User\UserOutputDTO;
 use App\Entity\User;
-use App\Repository\InterestRepository;
+use App\Repository\Contract\InterestRepositoryInterface;
 
-class UserFactory
+final class UserFactory
 {
-    public function __construct(private InterestRepository $interestRepository)
+    public function __construct(private InterestRepositoryInterface $interestRepository)
     {
     }
 
-    public function makeUser (StoreUserInputDTO $storeUserInputDTO): User
+    public function makeUser(StoreUserInputDTO $storeUserInputDTO): User
     {
         $user = new User();
         $user->setEmail($storeUserInputDTO->email);
@@ -25,7 +27,7 @@ class UserFactory
 
         $interestIds = array_values(array_unique(array_map('intval', $storeUserInputDTO->interestIds)));
         if ($interestIds !== []) {
-            $interests = $this->interestRepository->findBy(['id' => $interestIds]);
+            $interests = $this->interestRepository->findByIds($interestIds);
 
             if (count($interests) !== count($interestIds)) {
                 throw new \InvalidArgumentException('Some interestIds do not exist.');
@@ -39,27 +41,16 @@ class UserFactory
         return $user;
     }
 
-    public function makeStoreUserInputDTO (array $data): StoreUserInputDTO
-    {
-        $user = new StoreUserInputDTO();
-        $user->email=$data['email'] ?? null;
-        $user->name=$data['name'] ?? null;
-        $user->password=$data['password'] ?? null;
-        $user->role=$data['role'] ?? null;
-        $user->createdAt = isset($data['created_at']) ? new \DateTimeImmutable($data['created_at']) : null;
-        $user->interestIds = $data['interestIds'] ?? $data['interest_ids'] ?? [];
-        return $user;
-    }
-
-    public function makeStoreUserOutputDTO (User $user): UserOutputDTO
+    public function makeStoreUserOutputDTO(User $user): UserOutputDTO
     {
         $userOutputDTO = new UserOutputDTO();
-        $userOutputDTO->id=$user->getId();
-        $userOutputDTO->email=$user->getEmail();
-        $userOutputDTO->name=$user->getName();
-        $userOutputDTO->password=null;
-        $userOutputDTO->role=$user->getRole();
+        $userOutputDTO->id = $user->getId();
+        $userOutputDTO->email = $user->getEmail();
+        $userOutputDTO->name = $user->getName();
+        $userOutputDTO->password = null;
+        $userOutputDTO->role = $user->getRole();
         $userOutputDTO->createdAt = $user->getCreatedAt();
+
         foreach ($user->getInterest() as $interest) {
             $interestOutputDTO = new InterestOutputDTO();
             $interestOutputDTO->id = $interest->getId();
@@ -70,9 +61,8 @@ class UserFactory
         return $userOutputDTO;
     }
 
-    public function makeUserOutputDTOs(array $users):array
+    public function makeUserOutputDTOs(array $users): array
     {
-        return array_map(fn($user) => $this->makeStoreUserOutputDTO($user), $users);
+        return array_map(fn (User $user): UserOutputDTO => $this->makeStoreUserOutputDTO($user), $users);
     }
-
 }

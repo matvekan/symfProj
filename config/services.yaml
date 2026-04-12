@@ -20,5 +20,9 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
+    App\Repository\Contract\UserRepositoryInterface: '@App\Repository\UserRepository'
+    App\Repository\Contract\InterestRepositoryInterface: '@App\Repository\InterestRepository'
+    App\Repository\Contract\PasswordResetRepositoryInterface: '@App\Repository\PasswordResetRepository'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\PasswordReset;
+use App\Repository\Contract\PasswordResetRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
@@ -10,27 +13,12 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<PasswordReset>
  */
-class PasswordResetRepository extends ServiceEntityRepository
+class PasswordResetRepository extends ServiceEntityRepository implements PasswordResetRepositoryInterface
 {
     public function __construct(private EntityManagerInterface $em, ManagerRegistry $registry)
     {
         parent::__construct($registry, PasswordReset::class);
     }
-
-    //    /**
-    //     * @return PasswordReset[] Returns an array of PasswordReset objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
 
     public function store(PasswordReset $passwordReset, bool $isFlush = true): PasswordReset
     {

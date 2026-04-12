@@ -8,6 +8,7 @@
 /var/
 /vendor/
 /docker/mysql-data/
+/docker/mysql-data-backup-*/
 ###< symfony/framework-bundle ###
 
 ###> lexik/jwt-authentication-bundle ###
