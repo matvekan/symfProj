@@ -20,10 +20,7 @@ final class ResetPasswordHandler
 
     public function handle(ResetPasswordRequestDto $requestDto): void
     {
-        $token = (string) $requestDto->token;
-        $newPassword = (string) $requestDto->newPassword;
-
-        $passwordReset = $this->passwordResetRepository->findValidByToken($token);
+        $passwordReset = $this->passwordResetRepository->findValidByToken($requestDto->token);
         if ($passwordReset === null) {
             throw new \InvalidArgumentException('Token is invalid or expired.');
         }
@@ -33,7 +30,7 @@ final class ResetPasswordHandler
             throw new \RuntimeException('User not found.');
         }
 
-        $user->setPassword($this->passwordHasher->hashPassword($user, $newPassword));
+        $user->setPassword($this->passwordHasher->hashPassword($user, $requestDto->newPassword));
         $passwordReset->setUsedAt(new \DateTimeImmutable());
 
         $this->userRepository->store($user);

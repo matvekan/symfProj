@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Repository\Contract\UserRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -44,45 +45,124 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
         return $this->findOneBy(['email' => $email]);
     }
 
-    public function findByAdminFilters(AdminUserFiltersDto $filters, int $page = 1, int $limit = 20): array
-    {
-        $qb = $this->createQueryBuilder('u')
-            ->leftJoin('u.interest', 'i')
-            ->addSelect('i');
+    /**
+     * @return list<User>
+     */
+    public function findByAdminFilters(
+        AdminUserFiltersDto $filters,
+        int $page = 1,
+        int $limit = 20,
+    ): array {
+        $page = max(1, $page);
+        $limit = max(1, min(100, $limit));
 
-        if ($filters->name !== null) {
-            $qb->andWhere('u.name LIKE :name')->setParameter('name', '%' . $filters->name . '%');
-        }
+        $qb = $this->createBaseAdminFiltersQueryBuilder();
 
-        if ($filters->email !== null) {
-            $qb->andWhere('u.email LIKE :email')->setParameter('email', '%' . $filters->email . '%');
-        }
+        $this->applyNameFilter($qb, $filters);
+        $this->applyEmailFilter($qb, $filters);
+        $this->applyRoleFilter($qb, $filters);
+        $this->applyCreatedFromFilter($qb, $filters);
+        $this->applyCreatedToFilter($qb, $filters);
+        $this->applyInterestIdsFilter($qb, $filters);
+        $this->applyInterestNameFilter($qb, $filters);
 
-        if ($filters->role !== null) {
-            $qb->andWhere('u.role = :role')->setParameter('role', mb_strtoupper($filters->role));
-        }
-
-        if ($filters->createdFrom !== null) {
-            $qb->andWhere('u.createdAt >= :createdFrom')->setParameter('createdFrom', $filters->createdFrom);
-        }
-
-        if ($filters->createdTo !== null) {
-            $qb->andWhere('u.createdAt <= :createdTo')->setParameter('createdTo', $filters->createdTo);
-        }
-
-        if ($filters->interestIds !== []) {
-            $qb->andWhere('i.id IN (:interestIds)')->setParameter('interestIds', $filters->interestIds);
-        }
-
-        if ($filters->interestName !== null) {
-            $qb->andWhere('i.name LIKE :interestName')->setParameter('interestName', '%' . $filters->interestName . '%');
-        }
-
-        $offset = max(0, ($page - 1) * $limit);
-        $qb->orderBy('u.id', 'DESC')
-            ->setFirstResult($offset)
+        $qb
+            ->orderBy('u.id', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
 
-        return $qb->getQuery()->getResult();
+        /** @var list<User> $result */
+        $result = $qb->getQuery()->getResult();
+
+        return $result;
+    }
+
+    private function createBaseAdminFiltersQueryBuilder(): QueryBuilder
+    {
+        return $this->createQueryBuilder('u')
+            ->leftJoin('u.interest', 'i')
+            ->addSelect('i');
+    }
+
+    private function applyNameFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
+    {
+        if ($filters->name === null || $filters->name === '') {
+            return;
+        }
+
+        $qb
+            ->andWhere('u.name LIKE :name')
+            ->setParameter('name', $this->wrapLike($filters->name));
+    }
+
+    private function applyEmailFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
+    {
+        if ($filters->email === null || $filters->email === '') {
+            return;
+        }
+
+        $qb
+            ->andWhere('u.email LIKE :email')
+            ->setParameter('email', $this->wrapLike($filters->email));
+    }
+
+    private function applyRoleFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
+    {
+        if ($filters->role === null || $filters->role === '') {
+            return;
+        }
+
+        $qb
+            ->andWhere('u.role = :role')
+            ->setParameter('role', mb_strtoupper($filters->role));
+    }
+
+    private function applyCreatedFromFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
+    {
+        if ($filters->createdFrom === null) {
+            return;
+        }
+
+        $qb
+            ->andWhere('u.createdAt >= :createdFrom')
+            ->setParameter('createdFrom', $filters->createdFrom);
+    }
+
+    private function applyCreatedToFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
+    {
+        if ($filters->createdTo === null) {
+            return;
+        }
+
+        $qb
+            ->andWhere('u.createdAt <= :createdTo')
+            ->setParameter('createdTo', $filters->createdTo);
+    }
+
+    private function applyInterestIdsFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
+    {
+        if ($filters->interestIds === []) {
+            return;
+        }
+
+        $qb
+            ->andWhere('i.id IN (:interestIds)')
+            ->setParameter('interestIds', $filters->interestIds);
+    }
+
+    private function applyInterestNameFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
+    {
+        if ($filters->interestName === null || $filters->interestName === '') {
+            return;
+        }
+
+        $qb
+            ->andWhere('i.name LIKE :interestName')
+            ->setParameter('interestName', $this->wrapLike($filters->interestName));
+    }
+
+    private function wrapLike(string $value): string
+    {
+        return '%' . trim($value) . '%';
     }
 }

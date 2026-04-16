@@ -8,14 +8,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class CreateAdminInterestRequestDto
 {
-    #[Assert\NotBlank(message: 'name is required.')]
-    public ?string $name = null;
-
-    public static function fromArray(array $data): self
-    {
-        $dto = new self();
-        $dto->name = array_key_exists('name', $data) ? (string) $data['name'] : null;
-
-        return $dto;
+    public function __construct(
+        #[Assert\NotBlank(message: 'name is required.')]
+        public readonly string $name = '',
+    ) {
     }
 }

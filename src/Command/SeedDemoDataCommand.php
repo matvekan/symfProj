@@ -1,68 +1,92 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
-use App\Entity\Interest;
-use App\Entity\User;
+use App\DTO\Input\User\StoreUserInputDTO;
+use App\DTO\Request\Admin\Interest\CreateAdminInterestRequestDto;
 use App\Repository\Contract\InterestRepositoryInterface;
 use App\Repository\Contract\UserRepositoryInterface;
+use App\Service\Admin\Interest\CreateAdminInterestHandler;
+use App\Service\UserService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 #[AsCommand(name: 'app:seed-demo-data', description: 'Create demo admin/user and interests')]
-class SeedDemoDataCommand extends Command
+final class SeedDemoDataCommand extends Command
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private InterestRepositoryInterface $interestRepository,
-        private UserPasswordHasherInterface $passwordHasher,
+        private UserService $userService,
+        private CreateAdminInterestHandler $createAdminInterestHandler,
     ) {
         parent::__construct();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $interestNames = ['football', 'music', 'programming'];
-        $interests = [];
-        foreach ($interestNames as $name) {
-            $interest = $this->interestRepository->findByName($name);
-            if ($interest === null) {
-                $interest = new Interest();
-                $interest->setName($name);
-                $this->interestRepository->store($interest);
-            }
-            $interests[] = $interest;
-        }
+        $footballId = $this->ensureInterest('football');
+        $musicId = $this->ensureInterest('music');
+        $this->ensureInterest('programming');
 
-        $admin = $this->userRepository->findOneByEmail('admin@example.com');
-        if ($admin === null) {
-            $admin = new User();
-            $admin->setName('Admin');
-            $admin->setEmail('admin@example.com');
-            $admin->setRole('ROLE_ADMIN');
-            $admin->setCreatedAt(new \DateTimeImmutable());
-            $admin->setPassword($this->passwordHasher->hashPassword($admin, 'admin123'));
-            $admin->addInterest($interests[0]);
-            $this->userRepository->store($admin);
-        }
+        $this->ensureUser(
+            name: 'Admin',
+            email: 'admin@example.com',
+            role: 'ROLE_ADMIN',
+            password: 'admin123',
+            interestIds: [$footballId],
+        );
 
-        $user = $this->userRepository->findOneByEmail('user@example.com');
-        if ($user === null) {
-            $user = new User();
-            $user->setName('User');
-            $user->setEmail('user@example.com');
-            $user->setRole('ROLE_USER');
-            $user->setCreatedAt(new \DateTimeImmutable());
-            $user->setPassword($this->passwordHasher->hashPassword($user, 'user123'));
-            $user->addInterest($interests[1]);
-            $this->userRepository->store($user);
-        }
+        $this->ensureUser(
+            name: 'User',
+            email: 'user@example.com',
+            role: 'ROLE_USER',
+            password: 'user123',
+            interestIds: [$musicId],
+        );
 
         $output->writeln('Seed completed: admin@example.com/admin123 and user@example.com/user123');
 
         return Command::SUCCESS;
+    }
+
+    private function ensureInterest(string $name): int
+    {
+        $existing = $this->interestRepository->findByName($name);
+        if ($existing !== null) {
+            return (int) $existing->getId();
+        }
+
+        $created = $this->createAdminInterestHandler->handle(new CreateAdminInterestRequestDto($name));
+
+        return (int) $created->getId();
+    }
+
+    /**
+     * @param array<int, int> $interestIds
+     */
+    private function ensureUser(
+        string $name,
+        string $email,
+        string $role,
+        string $password,
+        array $interestIds,
+    ): void {
+        if ($this->userRepository->findOneByEmail($email) !== null) {
+            return;
+        }
+
+        $this->userService->store(new StoreUserInputDTO(
+            name: $name,
+            email: $email,
+            password: $password,
+            role: $role,
+            createdAt: new \DateTimeImmutable(),
+            interestIds: $interestIds,
+        ));
     }
 }

@@ -7,20 +7,20 @@ namespace App\Service\Admin\User;
 use App\DTO\Query\Admin\ListAdminUsersQueryDto;
 use App\Factory\UserFactory;
 use App\Repository\Contract\UserRepositoryInterface;
-use App\Resource\UserResourse;
 use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Serializer\SerializerInterface;
 
-final class ListAdminUsersHandler
+final class ListAdminUsersFetcher
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private UserFactory $userFactory,
-        private UserResourse $userResourse,
         private CacheItemPoolInterface $cachePool,
+        private SerializerInterface $serializer,
     ) {
     }
 
-    public function handle(ListAdminUsersQueryDto $queryDto): string
+    public function fetch(ListAdminUsersQueryDto $queryDto): string
     {
         $cacheKey = 'admin_users_' . md5((string) json_encode($queryDto->toCachePayload()));
         $cacheItem = $this->cachePool->getItem($cacheKey);
@@ -29,7 +29,7 @@ final class ListAdminUsersHandler
         }
 
         $users = $this->userRepository->findByAdminFilters($queryDto->filters, $queryDto->page, $queryDto->limit);
-        $payload = $this->userResourse->userCollection($this->userFactory->makeUserOutputDTOs($users));
+        $payload = $this->serializer->serialize($this->userFactory->makeUserOutputDTOs($users), 'json', ['groups' => ['user:item']]);
 
         $cacheItem->set($payload);
         $cacheItem->expiresAfter(300);

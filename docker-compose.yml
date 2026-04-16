@@ -30,6 +30,22 @@ services:
       - mysql
       - redis
 
+  messenger_worker:
+    container_name: symfony_messenger_worker
+    build:
+      context: ./docker/php
+    volumes:
+      - ./:/var/www
+    command: php bin/console messenger:consume async --time-limit=3600 --memory-limit=128M --sleep=1 -vv
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=mysql://root:root@mysql:3306/symfony?serverVersion=8.0
+    depends_on:
+      - php
+      - redis
+    networks:
+      - symfony_network
+
   mysql:
     container_name: symfony_mysql
     image: mysql:8.0

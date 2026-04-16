@@ -7,13 +7,13 @@ namespace App\Service\Admin\Interest;
 use App\Entity\Interest;
 use App\Repository\Contract\InterestRepositoryInterface;
 
-final class ListAdminInterestsHandler
+final class ListAdminInterestsFetcher
 {
     public function __construct(private InterestRepositoryInterface $interestRepository)
     {
     }
 
-    public function handle(): array
+    public function fetch(): array
     {
         $interests = $this->interestRepository->findAllOrderedByName();
 

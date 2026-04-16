@@ -11,48 +11,29 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class UpdateMeRequestDto
 {
-    #[Assert\Length(min: 3, max: 255)]
-    public ?string $name = null;
-
-    #[Assert\Email(message: 'email is not valid.')]
-    public ?string $email = null;
-
-    public ?string $password = null;
-
-    #[Assert\Type('array')]
-    #[Assert\All([
-        new Assert\Type('integer'),
-    ])]
-    #[EntityExists(entity: Interest::class)]
-    public array $interestIds = [];
-
-    public bool $hasInterestIds = false;
-
-    public static function fromArray(array $data): self
-    {
-        $dto = new self();
-        $dto->name = array_key_exists('name', $data) ? (string) $data['name'] : null;
-        $dto->email = array_key_exists('email', $data) ? (string) $data['email'] : null;
-        $dto->password = array_key_exists('password', $data) ? (string) $data['password'] : null;
-
-        if (array_key_exists('interestIds', $data) || array_key_exists('interest_ids', $data)) {
-            $dto->hasInterestIds = true;
-            $interestIds = $data['interestIds'] ?? $data['interest_ids'] ?? [];
-            $dto->interestIds = is_array($interestIds) ? array_values($interestIds) : [];
-        }
-
-        return $dto;
+    public function __construct(
+        #[Assert\Length(min: 3, max: 255)]
+        public readonly ?string $name = null,
+        #[Assert\Email(message: 'email is not valid.')]
+        public readonly ?string $email = null,
+        public readonly ?string $password = null,
+        #[Assert\Type('array')]
+        #[Assert\All([
+            new Assert\Type('integer'),
+        ])]
+        #[EntityExists(entity: Interest::class)]
+        public readonly ?array $interestIds = null,
+    ) {
     }
 
     public function toUpdateUserInputDto(): UpdateUserInputDto
     {
-        $dto = new UpdateUserInputDto();
-        $dto->name = $this->name;
-        $dto->email = $this->email;
-        $dto->password = $this->password;
-        $dto->hasInterestIds = $this->hasInterestIds;
-        $dto->interestIds = $this->interestIds;
-
-        return $dto;
+        return new UpdateUserInputDto(
+            name: $this->name,
+            email: $this->email,
+            password: $this->password,
+            hasInterestIds: $this->interestIds !== null,
+            interestIds: $this->interestIds ?? [],
+        );
     }
 }

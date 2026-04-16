@@ -6,22 +6,19 @@ namespace App\DTO\Query\Admin;
 
 final class AdminUserFiltersDto
 {
-    public ?string $name = null;
-
-    public ?string $email = null;
-
-    public ?string $role = null;
-
-    public ?\DateTimeImmutable $createdFrom = null;
-
-    public ?\DateTimeImmutable $createdTo = null;
-
-    public ?string $interestName = null;
-
     /**
-     * @var array<int, int>
+     * @param array<int, int> $interestIds
      */
-    public array $interestIds = [];
+    public function __construct(
+        public ?string $name = null,
+        public ?string $email = null,
+        public ?string $role = null,
+        public ?\DateTimeImmutable $createdFrom = null,
+        public ?\DateTimeImmutable $createdTo = null,
+        public ?string $interestName = null,
+        public array $interestIds = [],
+    ) {
+    }
 
     /**
      * @return array<string, mixed>

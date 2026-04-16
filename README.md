@@ -1,6 +1,6 @@
 # SymfProj
 
-Backend + simple frontend demo on Symfony 6.4 for:
+Backend + simple frontend demo on Symfony 7.3 for:
 - registration/login with JWT
 - forgot/reset password by email
 - roles: `ROLE_ADMIN` and `ROLE_USER`
@@ -11,8 +11,8 @@ Backend + simple frontend demo on Symfony 6.4 for:
 
 ## 1) Stack
 
-- PHP 8.1
-- Symfony 6.4
+- PHP 8.5
+- Symfony 7.3
 - Doctrine ORM + Migrations
 - MySQL 8
 - Redis
@@ -85,8 +85,15 @@ APP_BASE_URL=https://your-domain.com
 
 Flow:
 1. `POST /api/auth/forgot-password` with email
-2. email contains token + clickable link `/forgot-password?token=...`
-3. `POST /api/auth/reset-password` with `token` + `newPassword`
+2. app stores token and dispatches email message to Messenger async transport
+3. worker sends email with token + clickable link `/forgot-password?token=...`
+4. `POST /api/auth/reset-password` with `token` + `newPassword`
+
+Run Messenger worker:
+
+```bash
+docker compose exec php php bin/console messenger:consume async -vv
+```
 
 ## 5) API endpoints
 
@@ -128,7 +135,7 @@ Admin (`ROLE_ADMIN`):
 - factory mapper: `src/Factory/UserFactory.php`
 
 ### Validation and exceptions
-- validator: `src/DTOValidator/UserDTOValidator.php`
+- request DTO validation: Symfony constraints + `MapRequestPayload`/`MapQueryString`
 - custom constraint: `src/Validator/Constraint/EntityExists.php`
 - custom constraint validator: `src/Validator/Constraint/EntityExistsValidator.php`
 - custom exception: `src/Exception/ValidateException.php`
@@ -138,18 +145,17 @@ Admin (`ROLE_ADMIN`):
 - user business logic: `src/Service/UserService.php`
 
 ### API controllers
-- auth: `src/Controller/AuthController.php`
-- current user: `src/Controller/MeController.php`
-- admin users: `src/Controller/AdminUserController.php`
-- admin interests: `src/Controller/AdminInterestController.php`
-- public interests: `src/Controller/InterestController.php`
+- auth: `src/Controller/Auth/*`
+- current user: `src/Controller/Me/*`
+- admin users: `src/Controller/Admin/User/*`
+- admin interests: `src/Controller/Admin/Interest/*`
+- public interests: `src/Controller/Interest/*`
 
 ### Web pages controller
 - `src/Controller/PageController.php`
 
 ### Serialization response layer
-- response builder: `src/ResponseBuilder/UserResponseBuilder.php`
-- resource serializer: `src/Resource/UserResourse.php`
+- responses are returned directly from controllers as JSON
 
 ### Config
 - security/jwt: `config/packages/security.yaml`, `config/routes/jwt.yaml`, `config/packages/lexik_jwt_authentication.yaml`
