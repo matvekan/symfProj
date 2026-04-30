@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace App\DTO\Input\User;
+
 use App\Entity\Interest;
 use App\Validator\Constraint\EntityExists;
 use Symfony\Component\Validator\Constraints as Assert;

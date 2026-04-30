@@ -26,7 +26,7 @@ final class UpdateMeController extends AbstractController
     public function __invoke(#[MapRequestPayload] UpdateMeRequestDto $requestDto): JsonResponse
     {
         $user = $this->currentUserProvider->getCurrentUser();
-        if ($user === null) {
+        if (null === $user) {
             return $this->json(['error' => 'Unauthorized.'], 401);
         }
 

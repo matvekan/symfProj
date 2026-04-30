@@ -29,8 +29,8 @@ final class AdminUserFiltersDto
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->role,
-            'createdFrom' => $this->createdFrom?->format(DATE_ATOM),
-            'createdTo' => $this->createdTo?->format(DATE_ATOM),
+            'createdFrom' => $this->createdFrom?->format(\DATE_ATOM),
+            'createdTo' => $this->createdTo?->format(\DATE_ATOM),
             'interestName' => $this->interestName,
             'interestIds' => $this->interestIds,
         ];

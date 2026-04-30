@@ -26,6 +26,6 @@ final class UpdateAdminUserController extends AbstractController
     {
         $updated = $this->updateUserHandler->handle($user, $requestDto);
 
-        return  new JsonResponse($this->serializer->serialize($updated, 'json', ['groups' => ['user:item']]), 200, [], true);
+        return new JsonResponse($this->serializer->serialize($updated, 'json', ['groups' => ['user:item']]), 200, [], true);
     }
 }

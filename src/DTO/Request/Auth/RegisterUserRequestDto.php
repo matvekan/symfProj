@@ -10,6 +10,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class RegisterUserRequestDto
 {
+    /**
+     * @param array<int, int> $interestIds
+     */
     public function __construct(
         #[Assert\NotBlank(message: 'name is required.')]
         #[Assert\Length(min: 3, max: 255)]
@@ -24,6 +27,7 @@ final class RegisterUserRequestDto
             new Assert\Type('integer'),
         ])]
         #[EntityExists(entity: Interest::class)]
+        /** @var array<int, int> */
         public readonly array $interestIds = [],
     ) {
     }

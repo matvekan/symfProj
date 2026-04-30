@@ -19,5 +19,4 @@ interface UserRepositoryInterface
      * @return array<int, User>
      */
     public function findByAdminFilters(AdminUserFiltersDto $filters, int $page = 1, int $limit = 20): array;
-
 }

@@ -6,9 +6,9 @@ namespace App\MessageHandler;
 
 use App\Message\PasswordResetEmailMessage;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Mime\Email;
 
 #[AsMessageHandler]
@@ -27,11 +27,11 @@ final class PasswordResetEmailMessageHandler
             ->to($message->email)
             ->subject('Password reset')
             ->text("Use this token to reset password: {$message->token}\nOr open: {$message->baseUrl}/forgot-password?token={$message->token}")
-            ->html(sprintf(
+            ->html(\sprintf(
                 '<p>Your password reset token: <b>%s</b></p><p><a href="%s/forgot-password?token=%s">Open reset page</a></p>',
-                htmlspecialchars($message->token, ENT_QUOTES),
-                htmlspecialchars($message->baseUrl, ENT_QUOTES),
-                htmlspecialchars($message->token, ENT_QUOTES),
+                htmlspecialchars($message->token, \ENT_QUOTES),
+                htmlspecialchars($message->baseUrl, \ENT_QUOTES),
+                htmlspecialchars($message->token, \ENT_QUOTES),
             ));
 
         try {

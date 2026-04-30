@@ -42,7 +42,7 @@ class InterestRepository extends ServiceEntityRepository implements InterestRepo
 
     public function findByIds(array $ids): array
     {
-        if ($ids === []) {
+        if ([] === $ids) {
             return [];
         }
 

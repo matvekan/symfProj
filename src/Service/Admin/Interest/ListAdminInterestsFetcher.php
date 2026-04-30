@@ -13,6 +13,9 @@ final class ListAdminInterestsFetcher
     {
     }
 
+    /**
+     * @return array<int, array{id: int|null, name: string|null}>
+     */
     public function fetch(): array
     {
         $interests = $this->interestRepository->findAllOrderedByName();

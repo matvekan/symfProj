@@ -11,6 +11,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class UpdateAdminUserRequestDto
 {
+    /**
+     * @param array<int, int>|null $interestIds
+     */
     public function __construct(
         #[Assert\Length(min: 3, max: 255)]
         public readonly ?string $name = null,
@@ -24,6 +27,7 @@ final class UpdateAdminUserRequestDto
             new Assert\Type('integer'),
         ])]
         #[EntityExists(entity: Interest::class)]
+        /** @var array<int, int>|null */
         public readonly ?array $interestIds = null,
     ) {
     }
@@ -35,7 +39,7 @@ final class UpdateAdminUserRequestDto
             email: $this->email,
             role: $this->role,
             password: $this->password,
-            hasInterestIds: $this->interestIds !== null,
+            hasInterestIds: null !== $this->interestIds,
             interestIds: $this->interestIds ?? [],
         );
     }

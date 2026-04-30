@@ -10,6 +10,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class ReplaceMeInterestsRequestDto
 {
+    /**
+     * @param array<int, int>|null $interestIds
+     */
     public function __construct(
         #[Assert\NotNull(message: 'interestIds must be provided.')]
         #[Assert\Type('array')]
@@ -17,6 +20,7 @@ final class ReplaceMeInterestsRequestDto
             new Assert\Type('integer'),
         ])]
         #[EntityExists(entity: Interest::class)]
+        /** @var array<int, int>|null */
         public readonly ?array $interestIds = null,
     ) {
     }

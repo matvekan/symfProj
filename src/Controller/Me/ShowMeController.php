@@ -22,7 +22,7 @@ final class ShowMeController extends AbstractController
     public function __invoke(): JsonResponse
     {
         $user = $this->currentUserProvider->getCurrentUser();
-        if ($user === null) {
+        if (null === $user) {
             return $this->json(['error' => 'Unauthorized.'], 401);
         }
 

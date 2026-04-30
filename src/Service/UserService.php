@@ -22,18 +22,17 @@ class UserService
         private UserPasswordHasherInterface $passwordHasher,
         private InterestRepositoryInterface $interestRepository,
         private CacheItemPoolInterface $cachePool,
-    )
-    {
+    ) {
     }
 
     public function store(StoreUserInputDTO $storeUserInputDTO): User
     {
         $user = $this->userFactory->makeUser($storeUserInputDTO);
         $user->setPassword($this->passwordHasher->hashPassword($user, $user->getPassword() ?? ''));
-        if ($user->getCreatedAt() === null) {
+        if (null === $user->getCreatedAt()) {
             $user->setCreatedAt(new \DateTimeImmutable());
         }
-        if ($user->getRole() === null || $user->getRole() === '') {
+        if (null === $user->getRole() || '' === $user->getRole()) {
             $user->setRole('ROLE_USER');
         }
 
@@ -44,19 +43,19 @@ class UserService
 
     public function updateUser(User $user, UpdateUserInputDto $updateUserInputDto): User
     {
-        if ($updateUserInputDto->name !== null) {
+        if (null !== $updateUserInputDto->name) {
             $user->setName($updateUserInputDto->name);
         }
 
-        if ($updateUserInputDto->email !== null) {
+        if (null !== $updateUserInputDto->email) {
             $user->setEmail($updateUserInputDto->email);
         }
 
-        if ($updateUserInputDto->role !== null) {
+        if (null !== $updateUserInputDto->role) {
             $user->setRole($updateUserInputDto->role);
         }
 
-        if ($updateUserInputDto->password !== null && $updateUserInputDto->password !== '') {
+        if (null !== $updateUserInputDto->password && '' !== $updateUserInputDto->password) {
             $user->setPassword($this->passwordHasher->hashPassword($user, $updateUserInputDto->password));
         }
 
@@ -76,7 +75,7 @@ class UserService
         }
 
         $normalizedIds = $interestIdsInputDto->normalized();
-        if ($normalizedIds !== []) {
+        if ([] !== $normalizedIds) {
             $interests = $this->interestRepository->findByIds($normalizedIds);
             foreach ($interests as $interest) {
                 $user->addInterest($interest);

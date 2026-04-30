@@ -9,9 +9,9 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[UniqueEntity(fields: ['email'], message: 'Email already used.')]
@@ -23,7 +23,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?int $id = null;
 
-
     #[Groups(groups: ['user:item'])]
     #[ORM\Column(length: 255)]
     private ?string $name = null;
@@ -32,11 +31,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255)]
     private ?string $password = null;
 
-
     #[Groups(groups: ['user:item'])]
     #[ORM\Column(length: 20)]
     private ?string $role = null;
-
 
     #[Groups(groups: ['user:item'])]
     #[ORM\Column]
@@ -102,26 +99,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $roles = ['ROLE_USER'];
 
-        if ($this->role !== null && $this->role !== '') {
+        if (null !== $this->role && '' !== $this->role) {
             $roles[] = $this->role;
         }
 
         return array_values(array_unique($roles));
     }
 
+    /**
+     * @param array<int, string> $roles
+     */
     public function setRoles(array $roles): static
     {
+        /** @var array<int, string> $roles */
         $role = $roles[0] ?? 'ROLE_USER';
-        $this->setRole((string) $role);
+        $this->setRole($role);
 
         return $this;
     }
 
     public function getUserIdentifier(): string
     {
-        return (string) $this->email;
+        if (null === $this->email || '' === $this->email) {
+            throw new \LogicException('User email must be set before authentication.');
+        }
+
+        return $this->email;
     }
 
+    #[\Deprecated('Empty by design; no sensitive transient data stored on entity.')]
     public function eraseCredentials(): void
     {
     }
@@ -173,5 +179,4 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
-
 }

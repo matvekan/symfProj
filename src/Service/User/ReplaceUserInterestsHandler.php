@@ -17,6 +17,6 @@ final class ReplaceUserInterestsHandler
 
     public function handle(User $user, ReplaceMeInterestsRequestDto $requestDto): User
     {
-        return $this->userService->replaceInterests($user, new InterestIdsInputDto($requestDto->interestIds));
+        return $this->userService->replaceInterests($user, new InterestIdsInputDto($requestDto->interestIds ?? []));
     }
 }

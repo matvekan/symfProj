@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\DTO\Output\User;
 
-use App\DTO\Output\Interest\InterestOutputDTO;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 final class UserOutputDTO
@@ -27,6 +26,7 @@ final class UserOutputDTO
     #[Groups(groups: ['user:item'])]
     public ?string $email = null;
 
+    /** @var array<int, \App\DTO\Output\Interest\InterestOutputDTO> */
     #[Groups(groups: ['user:item'])]
     public array $interests = [];
 }

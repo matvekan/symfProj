@@ -22,10 +22,12 @@ final class ListAdminUsersFetcher
 
     public function fetch(ListAdminUsersQueryDto $queryDto): string
     {
-        $cacheKey = 'admin_users_' . md5((string) json_encode($queryDto->toCachePayload()));
+        $cacheKey = 'admin_users_'.md5((string) json_encode($queryDto->toCachePayload()));
         $cacheItem = $this->cachePool->getItem($cacheKey);
         if ($cacheItem->isHit()) {
-            return (string) $cacheItem->get();
+            $cached = $cacheItem->get();
+
+            return \is_string($cached) ? $cached : '[]';
         }
 
         $users = $this->userRepository->findByAdminFilters($queryDto->filters, $queryDto->page, $queryDto->limit);

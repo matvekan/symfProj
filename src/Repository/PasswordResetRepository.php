@@ -32,7 +32,7 @@ class PasswordResetRepository extends ServiceEntityRepository implements Passwor
 
     public function findValidByToken(string $token): ?PasswordReset
     {
-        return $this->createQueryBuilder('pr')
+        $result = $this->createQueryBuilder('pr')
             ->andWhere('pr.token = :token')
             ->andWhere('pr.usedAt IS NULL')
             ->andWhere('pr.expiresAt > :now')
@@ -41,5 +41,7 @@ class PasswordResetRepository extends ServiceEntityRepository implements Passwor
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+
+        return $result instanceof PasswordReset ? $result : null;
     }
 }

@@ -58,19 +58,19 @@ final class AdminUserFiltersRequestDto
 
     private function normalize(?string $value): ?string
     {
-        if ($value === null) {
+        if (null === $value) {
             return null;
         }
 
         $trimmed = trim($value);
 
-        return $trimmed === '' ? null : $trimmed;
+        return '' === $trimmed ? null : $trimmed;
     }
 
     private function toDateTime(?string $value): ?\DateTimeImmutable
     {
         $normalized = $this->normalize($value);
-        if ($normalized === null) {
+        if (null === $normalized) {
             return null;
         }
 

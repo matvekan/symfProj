@@ -57,7 +57,7 @@ final class SeedDemoDataCommand extends Command
     private function ensureInterest(string $name): int
     {
         $existing = $this->interestRepository->findByName($name);
-        if ($existing !== null) {
+        if (null !== $existing) {
             return (int) $existing->getId();
         }
 
@@ -76,7 +76,7 @@ final class SeedDemoDataCommand extends Command
         string $password,
         array $interestIds,
     ): void {
-        if ($this->userRepository->findOneByEmail($email) !== null) {
+        if (null !== $this->userRepository->findOneByEmail($email)) {
             return;
         }
 

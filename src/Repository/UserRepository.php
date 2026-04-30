@@ -86,7 +86,7 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
 
     private function applyNameFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
     {
-        if ($filters->name === null || $filters->name === '') {
+        if (null === $filters->name || '' === $filters->name) {
             return;
         }
 
@@ -97,7 +97,7 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
 
     private function applyEmailFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
     {
-        if ($filters->email === null || $filters->email === '') {
+        if (null === $filters->email || '' === $filters->email) {
             return;
         }
 
@@ -108,7 +108,7 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
 
     private function applyRoleFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
     {
-        if ($filters->role === null || $filters->role === '') {
+        if (null === $filters->role || '' === $filters->role) {
             return;
         }
 
@@ -119,7 +119,7 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
 
     private function applyCreatedFromFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
     {
-        if ($filters->createdFrom === null) {
+        if (null === $filters->createdFrom) {
             return;
         }
 
@@ -130,7 +130,7 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
 
     private function applyCreatedToFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
     {
-        if ($filters->createdTo === null) {
+        if (null === $filters->createdTo) {
             return;
         }
 
@@ -141,7 +141,7 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
 
     private function applyInterestIdsFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
     {
-        if ($filters->interestIds === []) {
+        if ([] === $filters->interestIds) {
             return;
         }
 
@@ -152,7 +152,7 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
 
     private function applyInterestNameFilter(QueryBuilder $qb, AdminUserFiltersDto $filters): void
     {
-        if ($filters->interestName === null || $filters->interestName === '') {
+        if (null === $filters->interestName || '' === $filters->interestName) {
             return;
         }
 
@@ -163,6 +163,6 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
 
     private function wrapLike(string $value): string
     {
-        return '%' . trim($value) . '%';
+        return '%'.trim($value).'%';
     }
 }

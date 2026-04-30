@@ -9,9 +9,13 @@ use Symfony\Component\Validator\Constraint;
 #[\Attribute]
 final class EntityExists extends Constraint
 {
+    /** @var class-string<object> */
     public string $entity;
     public string $message = 'Entity {{entity}} with ID {{id}} not exists';
 
+    /**
+     * @param class-string<object> $entity
+     */
     public function __construct(string $entity, mixed $options = null, ?array $groups = null, mixed $payload = null)
     {
         parent::__construct($options, $groups, $payload);

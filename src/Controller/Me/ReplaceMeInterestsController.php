@@ -26,7 +26,7 @@ final class ReplaceMeInterestsController extends AbstractController
     public function __invoke(#[MapRequestPayload] ReplaceMeInterestsRequestDto $requestDto): JsonResponse
     {
         $user = $this->currentUserProvider->getCurrentUser();
-        if ($user === null) {
+        if (null === $user) {
             return $this->json(['error' => 'Unauthorized.'], 401);
         }
 

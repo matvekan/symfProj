@@ -21,12 +21,12 @@ final class ResetPasswordHandler
     public function handle(ResetPasswordRequestDto $requestDto): void
     {
         $passwordReset = $this->passwordResetRepository->findValidByToken($requestDto->token);
-        if ($passwordReset === null) {
+        if (null === $passwordReset) {
             throw new \InvalidArgumentException('Token is invalid or expired.');
         }
 
         $user = $this->userRepository->findOneByEmail((string) $passwordReset->getEmail());
-        if ($user === null) {
+        if (null === $user) {
             throw new \RuntimeException('User not found.');
         }
 

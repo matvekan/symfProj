@@ -19,6 +19,6 @@ final class ShowAdminUserController extends AbstractController
     #[Route('/api/admin/users/{user}', name: 'admin_users_show', methods: ['GET'])]
     public function __invoke(User $user): JsonResponse
     {
-        return new JsonResponse($this->serializer->serialize($user, 'json', ['groups' => ['user:item']]), 200,[], true);
+        return new JsonResponse($this->serializer->serialize($user, 'json', ['groups' => ['user:item']]), 200, [], true);
     }
 }

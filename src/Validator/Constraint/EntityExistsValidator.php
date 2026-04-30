@@ -27,9 +27,10 @@ final class EntityExistsValidator extends ConstraintValidator
         foreach ($value as $interestId) {
             $interest = $this->em->getRepository($constraint->entity)->find($interestId);
             if (!$interest) {
+                $idAsString = \is_scalar($interestId) ? (string) $interestId : '[non-scalar]';
                 $this->context->buildViolation($constraint->message)
                     ->setParameter('{{entity}}', $constraint->entity)
-                    ->setParameter('{{id}}', $interestId)
+                    ->setParameter('{{id}}', $idAsString)
                     ->addViolation();
             }
         }

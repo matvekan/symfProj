@@ -18,18 +18,27 @@ final class UserFactory
 
     public function makeUser(StoreUserInputDTO $storeUserInputDTO): User
     {
+        if (
+            null === $storeUserInputDTO->email
+            || null === $storeUserInputDTO->name
+            || null === $storeUserInputDTO->password
+            || null === $storeUserInputDTO->role
+        ) {
+            throw new \InvalidArgumentException('Required user fields are missing.');
+        }
+
         $user = new User();
         $user->setEmail($storeUserInputDTO->email);
         $user->setName($storeUserInputDTO->name);
         $user->setPassword($storeUserInputDTO->password);
         $user->setRole($storeUserInputDTO->role);
-        $user->setCreatedAt($storeUserInputDTO->createdAt);
+        $user->setCreatedAt($storeUserInputDTO->createdAt ?? new \DateTimeImmutable());
 
         $interestIds = array_values(array_unique(array_map('intval', $storeUserInputDTO->interestIds)));
-        if ($interestIds !== []) {
+        if ([] !== $interestIds) {
             $interests = $this->interestRepository->findByIds($interestIds);
 
-            if (count($interests) !== count($interestIds)) {
+            if (\count($interests) !== \count($interestIds)) {
                 throw new \InvalidArgumentException('Some interestIds do not exist.');
             }
 
@@ -61,6 +70,11 @@ final class UserFactory
         return $userOutputDTO;
     }
 
+    /**
+     * @param array<int, User> $users
+     *
+     * @return array<int, UserOutputDTO>
+     */
     public function makeUserOutputDTOs(array $users): array
     {
         return array_map(fn (User $user): UserOutputDTO => $this->makeStoreUserOutputDTO($user), $users);

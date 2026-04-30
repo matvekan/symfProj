@@ -28,7 +28,7 @@ final class ForgotPasswordHandler
     public function handle(ForgotPasswordRequestDto $requestDto): void
     {
         $user = $this->userRepository->findOneByEmail($requestDto->email);
-        if ($user === null) {
+        if (null === $user) {
             return;
         }
 
