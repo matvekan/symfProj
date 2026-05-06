@@ -19,18 +19,13 @@ final class CreateAdminInterestHandler
 
     public function handle(CreateAdminInterestRequestDto $requestDto): Interest
     {
-        $normalizedName = trim((string) $requestDto->name);
-        if ('' === $normalizedName) {
-            throw new \InvalidArgumentException('name is required.');
-        }
-
-        $existing = $this->interestRepository->findByName($normalizedName);
+        $existing = $this->interestRepository->findByName($requestDto->name);
         if (null !== $existing) {
             throw new \DomainException('Interest already exists.');
         }
 
         $interest = new Interest();
-        $interest->setName($normalizedName);
+        $interest->setName($requestDto->name);
         $this->interestRepository->store($interest);
         $this->cachePool->clear();
 

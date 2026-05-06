@@ -127,11 +127,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->email;
     }
 
-    #[\Deprecated('Empty by design; no sensitive transient data stored on entity.')]
-    public function eraseCredentials(): void
-    {
-    }
-
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
@@ -178,5 +173,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->interest->removeElement($interest);
 
         return $this;
+    }
+
+    #[\Deprecated('Empty by design; no sensitive transient data is stored on this entity.')]
+    public function eraseCredentials(): void
+    {
     }
 }

@@ -6,6 +6,8 @@ namespace App\Controller\Auth;
 
 use App\DTO\Request\Auth\ForgotPasswordRequestDto;
 use App\Service\Auth\ForgotPasswordHandler;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
@@ -19,6 +21,9 @@ final class ForgotPasswordController extends AbstractController
     }
 
     #[Route('/api/auth/forgot-password', name: 'auth_forgot_password', methods: ['POST'])]
+    #[OA\Tag(name: 'Auth')]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(ref: new Model(type: ForgotPasswordRequestDto::class)))]
+    #[OA\Response(response: 200, description: 'Request accepted')]
     public function __invoke(#[MapRequestPayload] ForgotPasswordRequestDto $requestDto): JsonResponse
     {
         $this->forgotPasswordHandler->handle($requestDto);

@@ -6,6 +6,8 @@ namespace App\Controller\Auth;
 
 use App\DTO\Request\Auth\ResetPasswordRequestDto;
 use App\Service\Auth\ResetPasswordHandler;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
@@ -19,6 +21,11 @@ final class ResetPasswordController extends AbstractController
     }
 
     #[Route('/api/auth/reset-password', name: 'auth_reset_password', methods: ['POST'])]
+    #[OA\Tag(name: 'Auth')]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(ref: new Model(type: ResetPasswordRequestDto::class)))]
+    #[OA\Response(response: 200, description: 'Password updated')]
+    #[OA\Response(response: 400, description: 'Invalid token')]
+    #[OA\Response(response: 404, description: 'User not found')]
     public function __invoke(#[MapRequestPayload] ResetPasswordRequestDto $requestDto): JsonResponse
     {
         try {
